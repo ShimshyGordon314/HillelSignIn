@@ -78,6 +78,26 @@
             border-color: #3498db;
         }
 
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
         button {
             width: 100%;
             padding: 12px;
@@ -128,12 +148,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- Back button -->
         <a href="index.html" class="back-button">
             <i class="fas fa-arrow-left icon"></i>Back to Scanner
         </a>
 
-        <!-- Main Form Section -->
         <div id="formSection">
             <h1><i class="fas fa-qrcode icon"></i>QR Code Registration</h1>
             <form id="signInForm">
@@ -151,9 +169,16 @@
                     <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" required>
                 </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="oneTimeSignIn" name="oneTimeSignIn">
+                    <label for="oneTimeSignIn">
+                        Quick sign-in (logs attendance without sending QR code for future use)
+                    </label>
+                </div>
                 
-                <button type="submit">
-                    <i class="fas fa-paper-plane icon"></i>Send Registration Email
+                <button type="submit" id="submitButton">
+                    <i class="fas fa-paper-plane icon"></i>Complete Registration
                 </button>
             </form>
             <p id="statusMessage"></p>
@@ -177,8 +202,8 @@
         }
 
         async function sendEmail(firstName, lastName, email, qrCodeData) {
-            const sharedUrl = `https://ShimshyGordon314.github.io/HillelSignIn/display.html?data=${encodeURIComponent(qrCodeData)}`;
-            
+            const sharedUrl = `https://yourusername.github.io/repository-name/display.html?data=${encodeURIComponent(qrCodeData)}`;
+
             try {
                 await emailjs.send("service_yv3ovn3", "template_o6dzuze", {
                     firstName: firstName,
@@ -186,30 +211,22 @@
                     email: email,
                     qrCodeUrl: sharedUrl
                 });
-
-                // Log the sign-in
-                const logEntry = {
-                    timestamp: Date.now(),
-                    name: `${firstName} ${lastName}`,
-                    email: email
-                };
-                const existingLog = JSON.parse(localStorage.getItem('signInLog') || '[]');
-                existingLog.push(logEntry);
-                localStorage.setItem('signInLog', JSON.stringify(existingLog));
-
-                const statusMsg = document.getElementById("statusMessage");
-                statusMsg.textContent = "✓ Registration successful! Check your email (including spam folder) for your QR code.";
-                statusMsg.className = "success";
-
-                setTimeout(() => {
-                    window.location.href = "index.html";
-                }, 2000);
+                return true;
             } catch (error) {
                 console.error("Error sending email:", error);
-                const statusMsg = document.getElementById("statusMessage");
-                statusMsg.textContent = "✗ Error sending email. Please try again.";
-                statusMsg.className = "error";
+                return false;
             }
+        }
+
+        function logSignIn(firstName, lastName, email) {
+            const logEntry = {
+                timestamp: Date.now(),
+                name: `${firstName} ${lastName}`,
+                email: email
+            };
+            const existingLog = JSON.parse(localStorage.getItem('signInLog') || '[]');
+            existingLog.push(logEntry);
+            localStorage.setItem('signInLog', JSON.stringify(existingLog));
         }
 
         document.getElementById("signInForm").addEventListener("submit", async function (event) {
@@ -217,9 +234,41 @@
             const firstName = document.getElementById("firstName").value;
             const lastName = document.getElementById("lastName").value;
             const email = document.getElementById("email").value;
+            const isOneTimeSignIn = document.getElementById("oneTimeSignIn").checked;
             
+            const statusMsg = document.getElementById("statusMessage");
             const qrCodeData = `Name: ${firstName} ${lastName}\nEmail: ${email}`;
-            await sendEmail(firstName, lastName, email, qrCodeData);
+
+            if (isOneTimeSignIn) {
+                // Just log the sign-in without sending email
+                logSignIn(firstName, lastName, email);
+                statusMsg.textContent = "✓ Sign-in successful!";
+                statusMsg.className = "success";
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 2000);
+            } else {
+                // Regular registration with email
+                const emailSent = await sendEmail(firstName, lastName, email, qrCodeData);
+                if (emailSent) {
+                    logSignIn(firstName, lastName, email);
+                    statusMsg.textContent = "✓ Registration successful! Check your email (including spam folder) for your QR code.";
+                    statusMsg.className = "success";
+                    setTimeout(() => {
+                        window.location.href = "index.html";
+                    }, 2000);
+                } else {
+                    statusMsg.textContent = "✗ Error sending email. Please try again.";
+                    statusMsg.className = "error";
+                }
+            }
+        });
+
+        // Update button text based on checkbox state
+        document.getElementById("oneTimeSignIn").addEventListener("change", function(event) {
+            const submitButton = document.getElementById("submitButton");
+            const icon = '<i class="fas fa-paper-plane icon"></i>';
+            submitButton.innerHTML = icon + (event.target.checked ? "Complete Sign-in" : "Complete Registration");
         });
     </script>
 </body>
