@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign-in Log</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 28px;
+        }
+
+        .button {
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background: #2980b9;
+        }
+
+        .button.download {
+            background: #27ae60;
+        }
+
+        .button.download:hover {
+            background: #219a52;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .icon {
+            margin-right: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="index.html" class="button">
+                <i class="fas fa-arrow-left icon"></i>Back to Scanner
+            </a>
+            <h1><i class="fas fa-clipboard-list icon"></i>Sign-in Log</h1>
+            <button onclick="downloadLog()" class="button download">
+                <i class="fas fa-download icon"></i>Download CSV
+            </button>
+        </div>
+        <div id="logTable"></div>
+    </div>
+
+    <script>
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+
+        function updateTable() {
+            const logData = JSON.parse(localStorage.getItem('signInLog') || '[]');
+            const tableDiv = document.getElementById('logTable');
+
+            if (logData.length === 0) {
+                tableDiv.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard icon"></i>
+                        <p>No sign-ins recorded yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            logData.reverse().forEach(entry => {
+                tableHTML += `
+                    <tr>
+                        <td>${formatDate(entry.timestamp)}</td>
+                        <td>${entry.name}</td>
+                        <td>${entry.email}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            tableDiv.innerHTML = tableHTML;
+        }
+
+        function downloadLog() {
+            const logData = JSON.parse(localStorage.getItem('signInLog') || '[]');
+            const csvContent = [
+                ['Timestamp', 'Name', 'Email'],
+                ...logData.map(entry => [
+                    formatDate(entry.timestamp),
+                    entry.name,
+                    entry.email
+                ])
+            ].map(row => row.join(',')).join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sign-in-log-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            // Clear log after download
+            localStorage.setItem('signInLog', '[]');
+            updateTable();
+        }
+
+        // Update table on load
+        updateTable();
+    </script>
+</body>
+</html>
