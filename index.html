@@ -151,7 +151,7 @@
             const existingLog = JSON.parse(localStorage.getItem('signInLog') || '[]');
 
             // Check for recent sign-in
-            const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
+            const twoMinutesAgo = Date.now() - (10 * 1000);
             const recentSignIn = existingLog.find(entry => 
                 entry.email === parsedData.email && 
                 entry.timestamp > twoMinutesAgo
